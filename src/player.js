@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { TextureGenerator } from './textures.js';
 import { sound } from './audio.js';
 
 export class Player {
@@ -12,32 +11,32 @@ export class Player {
     this.targetX = 0;
     this.currentX = 0;
 
-    // Jump & Slide
+    // Jump & Slide Physics
     this.isJumping = false;
     this.jumpVelocity = 0;
-    this.gravity = -38;
-    this.jumpForce = 13.5;
+    this.gravity = -40;
+    this.jumpForce = 14.5;
     this.y = 0;
 
     this.isSliding = false;
     this.slideTimer = 0;
-    this.slideDuration = 0.75;
+    this.slideDuration = 0.8;
 
-    // Orientation & Turning (0 = +Z/Forward, 1 = +X/Right, 2 = -Z/Back, 3 = -X/Left)
-    this.headingAngle = 0; // in radians
+    // Orientation & Turning (radians)
+    this.headingAngle = 0;
     this.targetHeading = 0;
     this.position = new THREE.Vector3(0, 0, 0);
 
-    // Stumble state (getting tripped by minor obstacles)
+    // Stumble
     this.isStumbling = false;
     this.stumbleTimer = 0;
 
-    // Alive state
+    // Life State
     this.isDead = false;
     this.deathReason = '';
     this.fallVelocity = 0;
 
-    // Power-up states
+    // Power-ups
     this.hasShield = false;
     this.shieldTimer = 0;
     this.hasMagnet = false;
@@ -46,10 +45,10 @@ export class Player {
     this.boostTimer = 0;
     this.scoreMultiplier = 1;
 
-    // Animation timer
+    // Animation cycle
     this.runCycle = 0;
 
-    // Build 3D Guy Dangerous character mesh
+    // Build Authentic Guy Dangerous 3D Model
     this.createCharacterMesh();
     this.createPowerupEffects();
   }
@@ -57,130 +56,163 @@ export class Player {
   createCharacterMesh() {
     this.mesh = new THREE.Group();
 
-    // Explorer materials
+    // Authentic materials
     const skinMat = new THREE.MeshLambertMaterial({ color: 0xdeb887 });
-    const shirtMat = new THREE.MeshLambertMaterial({ color: 0xe0d6b3 }); // beige khaki safari shirt
-    const vestMat = new THREE.MeshLambertMaterial({ color: 0x6e4720 }); // dark brown leather vest
-    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x4a4031 }); // khaki explorer pants
-    const bootsMat = new THREE.MeshLambertMaterial({ color: 0x24180e }); // leather boots
-    const hatMat = new THREE.MeshLambertMaterial({ color: 0x5a3d1c }); // fedora adventurer hat
-    const idolMat = new THREE.MeshStandardMaterial({
+    const hairMat = new THREE.MeshLambertMaterial({ color: 0x4a2e18 });
+    const jacketMat = new THREE.MeshLambertMaterial({ color: 0x5c3818 }); // Brown leather bomber jacket
+    const shirtMat = new THREE.MeshLambertMaterial({ color: 0xf0ebd8 }); // White explorer shirt
+    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x8a7b62 }); // Khaki cargo trousers
+    const bootsMat = new THREE.MeshLambertMaterial({ color: 0x2b1c10 }); // Dark leather combat boots
+    const beltMat = new THREE.MeshLambertMaterial({ color: 0x1f140a }); // Leather utility belt
+    const goldMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
-      metalness: 0.85,
+      metalness: 0.9,
       roughness: 0.2,
-      emissive: 0x553300
+      emissive: 0x442e00
     });
 
-    // Root node for character
     this.bodyRoot = new THREE.Group();
     this.mesh.add(this.bodyRoot);
 
-    // Torso / Chest
-    const torsoGeo = new THREE.BoxGeometry(0.7, 0.9, 0.45);
-    this.torso = new THREE.Mesh(torsoGeo, shirtMat);
-    this.torso.position.y = 1.35;
-    this.torso.castShadow = true;
-    this.bodyRoot.add(this.torso);
+    // Pelvis / Hips
+    const hipGeo = new THREE.BoxGeometry(0.68, 0.35, 0.42);
+    this.hips = new THREE.Mesh(hipGeo, pantsMat);
+    this.hips.position.y = 1.05;
+    this.bodyRoot.add(this.hips);
 
-    // Leather vest overlay
-    const vestGeo = new THREE.BoxGeometry(0.74, 0.85, 0.48);
-    const vest = new THREE.Mesh(vestGeo, vestMat);
-    this.torso.add(vest);
+    // Utility belt & gold buckle
+    const beltGeo = new THREE.BoxGeometry(0.72, 0.12, 0.46);
+    const belt = new THREE.Mesh(beltGeo, beltMat);
+    this.hips.add(belt);
 
-    // Explorer Backpack on back
-    const packGeo = new THREE.BoxGeometry(0.5, 0.6, 0.3);
-    const packMat = new THREE.MeshLambertMaterial({ color: 0x3d2b1f });
-    const pack = new THREE.Mesh(packGeo, packMat);
-    pack.position.set(0, 0.05, -0.36);
+    const buckleGeo = new THREE.BoxGeometry(0.18, 0.14, 0.48);
+    const buckle = new THREE.Mesh(buckleGeo, goldMat);
+    this.hips.add(buckle);
+
+    // Explorer Canteen & Gun Holster on hips
+    const holsterGeo = new THREE.BoxGeometry(0.14, 0.3, 0.22);
+    const holster = new THREE.Mesh(holsterGeo, beltMat);
+    holster.position.set(0.38, -0.05, 0);
+    this.hips.add(holster);
+
+    const canteenGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.22, 8);
+    const canteen = new THREE.Mesh(canteenGeo, new THREE.MeshLambertMaterial({ color: 0x556b2f }));
+    canteen.position.set(-0.38, 0, 0);
+    canteen.rotation.z = Math.PI / 2;
+    this.hips.add(canteen);
+
+    // Torso (Spine & Chest)
+    const torsoGeo = new THREE.BoxGeometry(0.72, 0.78, 0.44);
+    this.torso = new THREE.Mesh(torsoGeo, jacketMat);
+    this.torso.position.y = 0.55;
+    this.hips.add(this.torso);
+
+    // Open jacket showing explorer undershirt
+    const shirtGeo = new THREE.BoxGeometry(0.32, 0.72, 0.46);
+    const innerShirt = new THREE.Mesh(shirtGeo, shirtMat);
+    this.torso.add(innerShirt);
+
+    // Leather Backpack on back holding the Golden Cursed Idol!
+    const packGeo = new THREE.BoxGeometry(0.52, 0.58, 0.28);
+    const pack = new THREE.Mesh(packGeo, new THREE.MeshLambertMaterial({ color: 0x3d2612 }));
+    pack.position.set(0, 0.05, -0.34);
     this.torso.add(pack);
 
     // Golden Cursed Idol sticking out of backpack!
-    const idolGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.35, 8);
-    this.idol = new THREE.Mesh(idolGeo, idolMat);
-    this.idol.position.set(0, 0.3, -0.38);
-    this.idol.rotation.x = -0.3;
+    const idolGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.38, 8);
+    this.idol = new THREE.Mesh(idolGeo, goldMat);
+    this.idol.position.set(0, 0.32, -0.34);
+    this.idol.rotation.x = -0.28;
     this.torso.add(this.idol);
 
-    // Head
-    const headGeo = new THREE.BoxGeometry(0.4, 0.42, 0.4);
+    // Head & Neck
+    const neckGeo = new THREE.CylinderGeometry(0.12, 0.14, 0.16, 8);
+    const neck = new THREE.Mesh(neckGeo, skinMat);
+    neck.position.y = 0.45;
+    this.torso.add(neck);
+
+    const headGeo = new THREE.BoxGeometry(0.38, 0.4, 0.38);
     this.head = new THREE.Mesh(headGeo, skinMat);
-    this.head.position.set(0, 0.65, 0);
-    this.torso.add(this.head);
+    this.head.position.y = 0.25;
+    neck.add(this.head);
 
-    // Adventurer Fedora Hat
-    const hatBrimGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.05, 16);
-    const hatBrim = new THREE.Mesh(hatBrimGeo, hatMat);
-    hatBrim.position.set(0, 0.22, 0);
-    this.head.add(hatBrim);
+    // Hair
+    const hairGeo = new THREE.BoxGeometry(0.42, 0.16, 0.42);
+    const hair = new THREE.Mesh(hairGeo, hairMat);
+    hair.position.y = 0.18;
+    this.head.add(hair);
 
-    const hatCrownGeo = new THREE.CylinderGeometry(0.24, 0.3, 0.25, 16);
-    const hatCrown = new THREE.Mesh(hatCrownGeo, hatMat);
-    hatCrown.position.set(0, 0.35, 0);
-    this.head.add(hatCrown);
+    // Explorer Aviator Goggles on forehead
+    const goggleBandGeo = new THREE.BoxGeometry(0.42, 0.08, 0.42);
+    const goggleBand = new THREE.Mesh(goggleBandGeo, beltMat);
+    goggleBand.position.y = 0.08;
+    this.head.add(goggleBand);
 
-    // Hat Band
-    const bandGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.06, 16);
-    const bandMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const hatBand = new THREE.Mesh(bandGeo, bandMat);
-    hatBand.position.set(0, 0.26, 0);
-    this.head.add(hatBand);
+    const lensGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.06, 12);
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0x113344, roughness: 0.1, metalness: 0.9 });
+    const leftLens = new THREE.Mesh(lensGeo, lensMat);
+    leftLens.rotation.x = Math.PI / 2;
+    leftLens.position.set(-0.12, 0.08, 0.2);
+    this.head.add(leftLens);
 
-    // Limbs - Left Arm
+    const rightLens = new THREE.Mesh(lensGeo, lensMat);
+    rightLens.rotation.x = Math.PI / 2;
+    rightLens.position.set(0.12, 0.08, 0.2);
+    this.head.add(rightLens);
+
+    // Arms (Shoulders + Forearms)
+    const armGeo = new THREE.BoxGeometry(0.22, 0.65, 0.22);
+
     this.leftArm = new THREE.Group();
-    this.leftArm.position.set(-0.48, 0.35, 0);
-    const armGeo = new THREE.BoxGeometry(0.22, 0.7, 0.22);
-    const leftArmMesh = new THREE.Mesh(armGeo, shirtMat);
-    leftArmMesh.position.y = -0.32;
+    this.leftArm.position.set(-0.48, 0.32, 0);
+    const leftArmMesh = new THREE.Mesh(armGeo, jacketMat);
+    leftArmMesh.position.y = -0.28;
     this.leftArm.add(leftArmMesh);
     this.torso.add(this.leftArm);
 
-    // Right Arm
     this.rightArm = new THREE.Group();
-    this.rightArm.position.set(0.48, 0.35, 0);
-    const rightArmMesh = new THREE.Mesh(armGeo, shirtMat);
-    rightArmMesh.position.y = -0.32;
+    this.rightArm.position.set(0.48, 0.32, 0);
+    const rightArmMesh = new THREE.Mesh(armGeo, jacketMat);
+    rightArmMesh.position.y = -0.28;
     this.rightArm.add(rightArmMesh);
     this.torso.add(this.rightArm);
 
-    // Left Leg
+    // Legs & Combat Boots
+    const legGeo = new THREE.BoxGeometry(0.26, 0.75, 0.26);
+
     this.leftLeg = new THREE.Group();
-    this.leftLeg.position.set(-0.2, 0.9, 0);
-    const legGeo = new THREE.BoxGeometry(0.26, 0.85, 0.28);
+    this.leftLeg.position.set(-0.2, 0, 0);
     const leftLegMesh = new THREE.Mesh(legGeo, pantsMat);
-    leftLegMesh.position.y = -0.38;
+    leftLegMesh.position.y = -0.35;
     this.leftLeg.add(leftLegMesh);
 
-    // Left Boot
-    const bootGeo = new THREE.BoxGeometry(0.27, 0.2, 0.38);
-    const leftBoot = new THREE.Mesh(bootGeo, bootsMat);
-    leftBoot.position.set(0, -0.75, 0.05);
+    const leftBoot = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.38), bootsMat);
+    leftBoot.position.set(0, -0.72, 0.05);
     this.leftLeg.add(leftBoot);
-    this.bodyRoot.add(this.leftLeg);
+    this.hips.add(this.leftLeg);
 
-    // Right Leg
     this.rightLeg = new THREE.Group();
-    this.rightLeg.position.set(0.2, 0.9, 0);
+    this.rightLeg.position.set(0.2, 0, 0);
     const rightLegMesh = new THREE.Mesh(legGeo, pantsMat);
-    rightLegMesh.position.y = -0.38;
+    rightLegMesh.position.y = -0.35;
     this.rightLeg.add(rightLegMesh);
 
-    // Right Boot
-    const rightBoot = new THREE.Mesh(bootGeo, bootsMat);
-    rightBoot.position.set(0, -0.75, 0.05);
+    const rightBoot = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.22, 0.38), bootsMat);
+    rightBoot.position.set(0, -0.72, 0.05);
     this.rightLeg.add(rightBoot);
-    this.bodyRoot.add(this.rightLeg);
+    this.hips.add(this.rightLeg);
 
-    // Shadow blob projector under player
-    const shadowGeo = new THREE.CircleGeometry(0.65, 16);
+    // Shadow blob projector
+    const shadowGeo = new THREE.CircleGeometry(0.7, 16);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.5,
       depthWrite: false
     });
     this.shadow = new THREE.Mesh(shadowGeo, shadowMat);
     this.shadow.rotation.x = -Math.PI / 2;
-    this.shadow.position.y = 0.03;
+    this.shadow.position.y = 0.04;
     this.mesh.add(this.shadow);
 
     this.scene.add(this.mesh);
@@ -188,11 +220,11 @@ export class Player {
 
   createPowerupEffects() {
     // 1. Shield Energy Dome
-    const shieldGeo = new THREE.SphereGeometry(1.3, 16, 16);
+    const shieldGeo = new THREE.SphereGeometry(1.35, 16, 16);
     const shieldMat = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
+      color: 0x00ffcc,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.38,
       wireframe: true
     });
     this.shieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
@@ -200,12 +232,12 @@ export class Player {
     this.shieldMesh.visible = false;
     this.mesh.add(this.shieldMesh);
 
-    // 2. Magnet Halo
-    const magnetGeo = new THREE.TorusGeometry(0.85, 0.06, 8, 24);
+    // 2. Magnet Ring
+    const magnetGeo = new THREE.TorusGeometry(0.9, 0.07, 8, 24);
     const magnetMat = new THREE.MeshBasicMaterial({
       color: 0x3388ff,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.75
     });
     this.magnetMesh = new THREE.Mesh(magnetGeo, magnetMat);
     this.magnetMesh.position.y = 2.1;
@@ -213,22 +245,21 @@ export class Player {
     this.magnetMesh.visible = false;
     this.mesh.add(this.magnetMesh);
 
-    // 3. Boost Trail / Aura
-    const boostGeo = new THREE.ConeGeometry(0.9, 2.2, 8);
+    // 3. Boost Trail
+    const boostGeo = new THREE.ConeGeometry(1.0, 2.5, 8);
     const boostMat = new THREE.MeshBasicMaterial({
       color: 0xffaa00,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.55,
       wireframe: true
     });
     this.boostMesh = new THREE.Mesh(boostGeo, boostMat);
-    this.boostMesh.position.set(0, 1.0, -1.2);
+    this.boostMesh.position.set(0, 1.1, -1.3);
     this.boostMesh.rotation.x = -Math.PI / 2;
     this.boostMesh.visible = false;
     this.mesh.add(this.boostMesh);
   }
 
-  // Handle Lane Switching
   moveLeft() {
     if (this.isDead) return;
     if (this.lane > -1) {
@@ -247,7 +278,6 @@ export class Player {
     }
   }
 
-  // Handle Jump
   jump() {
     if (this.isDead) return;
     if (!this.isJumping && !this.isSliding) {
@@ -257,29 +287,25 @@ export class Player {
     }
   }
 
-  // Handle Slide / Duck
   slide() {
     if (this.isDead) return;
     if (!this.isSliding) {
       this.isSliding = true;
       this.slideTimer = this.slideDuration;
       if (this.isJumping) {
-        // Fast drop if pressed down during jump
-        this.jumpVelocity = -20;
+        this.jumpVelocity = -22; // Fast drop
       }
       sound.playSlide();
     }
   }
 
-  // Handle Stumble
   stumble() {
     if (this.isBoosted || this.hasShield) return;
     this.isStumbling = true;
-    this.stumbleTimer = 1.6;
+    this.stumbleTimer = 1.8;
     sound.playStumble();
   }
 
-  // Powerup activations
   activateShield(duration = 10) {
     this.hasShield = true;
     this.shieldTimer = duration;
@@ -303,7 +329,6 @@ export class Player {
 
   die(reason = 'Crashed into an obstacle!') {
     if (this.hasShield) {
-      // Consume shield instead of dying!
       this.hasShield = false;
       this.shieldMesh.visible = false;
       this.stumble();
@@ -314,12 +339,11 @@ export class Player {
     sound.playGameOver();
   }
 
-  update(dt, speed, forwardVector) {
+  update(dt, speed) {
     if (this.isDead) {
-      // Death tumble animation
       this.bodyRoot.rotation.x += dt * 5;
       this.bodyRoot.rotation.z += dt * 3;
-      if (this.deathReason.includes('abyss') || this.deathReason.includes('cliff') || this.deathReason.includes('gap')) {
+      if (this.deathReason.includes('abyss') || this.deathReason.includes('cliff') || this.deathReason.includes('gap') || this.deathReason.includes('water')) {
         this.fallVelocity += this.gravity * dt;
         this.mesh.position.y += this.fallVelocity * dt;
       }
@@ -329,7 +353,7 @@ export class Player {
     // Powerup Timers
     if (this.hasShield) {
       this.shieldTimer -= dt;
-      this.shieldMesh.rotation.y += dt * 2;
+      this.shieldMesh.rotation.y += dt * 2.5;
       if (this.shieldTimer <= 0) {
         this.hasShield = false;
         this.shieldMesh.visible = false;
@@ -380,56 +404,56 @@ export class Player {
       }
     }
 
-    // Lane Lerp (smooth lateral movement)
-    this.currentX += (this.targetX - this.currentX) * Math.min(1.0, dt * 14);
+    // Lane Lerp (smooth lateral change)
+    this.currentX += (this.targetX - this.currentX) * Math.min(1.0, dt * 15);
 
     // Smooth heading rotation
-    this.headingAngle += (this.targetHeading - this.headingAngle) * Math.min(1.0, dt * 12);
+    this.headingAngle += (this.targetHeading - this.headingAngle) * Math.min(1.0, dt * 14);
     this.mesh.rotation.y = this.headingAngle;
 
-    // Running Animation cycle
-    const runRate = this.isBoosted ? 26 : (speed * 0.45);
+    // Running rate
+    const runRate = this.isBoosted ? 28 : (speed * 0.48);
     this.runCycle += dt * runRate;
 
-    // Apply animation transforms to limbs
+    // Temple Run Authentic Body Poses
     if (this.isSliding) {
-      // Slide pose: player leans back flat, legs stretched forward
-      this.bodyRoot.position.y = -0.55;
-      this.bodyRoot.rotation.x = -Math.PI / 2.8;
+      // Classic Slide Pose: Guy leans back, legs extend flat on the pavers
+      this.bodyRoot.position.y = -0.58;
+      this.bodyRoot.rotation.x = -Math.PI / 2.7;
       this.leftLeg.rotation.x = -0.3;
       this.rightLeg.rotation.x = -0.3;
-      this.leftArm.rotation.x = 0.8;
-      this.rightArm.rotation.x = 0.8;
-      this.head.rotation.x = 0.6;
+      this.leftArm.rotation.x = 0.85;
+      this.rightArm.rotation.x = 0.85;
+      this.head.rotation.x = 0.65;
     } else if (this.isJumping) {
-      // Jump pose: legs tucked, arms outstretched
+      // Classic Jump Pose: Athletic parabolic leap, knees tucked high, arms raised
       this.bodyRoot.position.y = this.y;
-      this.bodyRoot.rotation.x = 0.2;
-      this.leftLeg.rotation.x = 0.7;
-      this.rightLeg.rotation.x = 0.4;
-      this.leftArm.rotation.x = -1.8;
-      this.rightArm.rotation.x = -1.8;
+      this.bodyRoot.rotation.x = 0.25;
+      this.leftLeg.rotation.x = 0.85;
+      this.rightLeg.rotation.x = 0.55;
+      this.leftArm.rotation.x = -1.9;
+      this.rightArm.rotation.x = -1.9;
       this.head.rotation.x = -0.2;
     } else if (this.isStumbling) {
-      // Stumble pose: wobble, off-balance flail
+      // Classic Stumble: Tripping forward, arms windmilling
       this.bodyRoot.position.y = 0;
-      this.bodyRoot.rotation.x = 0.3 + Math.sin(this.runCycle * 2) * 0.2;
-      this.bodyRoot.rotation.z = Math.sin(this.runCycle * 3) * 0.3;
-      this.leftArm.rotation.x = Math.sin(this.runCycle * 2) * 1.5;
-      this.rightArm.rotation.x = -Math.sin(this.runCycle * 2) * 1.5;
+      this.bodyRoot.rotation.x = 0.35 + Math.sin(this.runCycle * 2) * 0.25;
+      this.bodyRoot.rotation.z = Math.sin(this.runCycle * 3) * 0.35;
+      this.leftArm.rotation.x = Math.sin(this.runCycle * 2) * 1.6;
+      this.rightArm.rotation.x = -Math.sin(this.runCycle * 2) * 1.6;
       this.leftLeg.rotation.x = Math.sin(this.runCycle) * 0.8;
       this.rightLeg.rotation.x = -Math.sin(this.runCycle) * 0.8;
     } else {
-      // Natural athletic run cycle
-      this.bodyRoot.position.y = Math.abs(Math.sin(this.runCycle)) * 0.14;
-      this.bodyRoot.rotation.x = 0.16; // Slight forward lean
-      this.bodyRoot.rotation.z = (this.targetX - this.currentX) * -0.15; // Lean into lane turns
+      // Athletic Sprint: Pelvis bounce, leg swing, rhythmic arm drive, lane banking
+      this.bodyRoot.position.y = Math.abs(Math.sin(this.runCycle)) * 0.16;
+      this.bodyRoot.rotation.x = 0.18; // Athletic forward drive
+      this.bodyRoot.rotation.z = (this.targetX - this.currentX) * -0.16; // Lean into lane turns
 
-      const legSwing = Math.sin(this.runCycle) * 0.95;
+      const legSwing = Math.sin(this.runCycle) * 1.05;
       this.leftLeg.rotation.x = legSwing;
       this.rightLeg.rotation.x = -legSwing;
 
-      const armSwing = Math.sin(this.runCycle) * 0.95;
+      const armSwing = Math.sin(this.runCycle) * 1.05;
       this.leftArm.rotation.x = -armSwing;
       this.rightArm.rotation.x = armSwing;
 
@@ -437,25 +461,9 @@ export class Player {
       this.head.rotation.x = 0;
     }
 
-    // Shadow opacity and scale depending on jump height
-    const shadowScale = Math.max(0.3, 1.0 - this.y * 0.25);
+    // Shadow scaling
+    const shadowScale = Math.max(0.25, 1.0 - this.y * 0.25);
     this.shadow.scale.set(shadowScale, shadowScale, 1);
-    this.shadow.material.opacity = Math.max(0.1, 0.45 - this.y * 0.1);
-  }
-
-  // Get current bounding box for obstacle collision
-  getBoundingBox() {
-    const center = this.position.clone();
-    let height = 1.9;
-    let yPos = this.y + 0.95;
-
-    if (this.isSliding) {
-      height = 0.7;
-      yPos = 0.35;
-    }
-
-    const min = new THREE.Vector3(center.x - 0.4, yPos - height / 2, center.z - 0.4);
-    const max = new THREE.Vector3(center.x + 0.4, yPos + height / 2, center.z + 0.4);
-    return new THREE.Box3(min, max);
+    this.shadow.material.opacity = Math.max(0.08, 0.5 - this.y * 0.12);
   }
 }
