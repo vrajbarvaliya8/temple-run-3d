@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>TEMPLE RUN: IDOL ESCAPE 3D</title>
+  <title>TEMPLE RUN - IDOL ESCAPE</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗿</text></svg>" />
-  <script type="module" crossorigin src="./assets/index-B6TcJpJK.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-BDh0Gyta.css">
+  <script type="module" crossorigin src="./assets/index-8nmsuV6e.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-5T-AiXgf.css">
 </head>
 <body>
   <!-- 3D Canvas Container -->
@@ -16,46 +16,39 @@
   <div id="ui-overlay">
     <!-- Top HUD Bar -->
     <div class="hud-top">
-      <!-- Left side: Score & Multiplier -->
-      <div>
-        <div class="hud-item">
-          <span class="hud-icon">🏆</span>
-          <div>
-            <div class="hud-label">Score</div>
-            <div id="hud-score" class="hud-val">0</div>
-          </div>
-          <span id="hud-mult" style="font-size:12px; color:#ffdd00; font-weight:bold; margin-left:6px;">1X</span>
+      <!-- Left side: Iconic Temple Run Adrenaline Meter -->
+      <div class="adrenaline-container" id="adrenaline-container" title="Collect coins to fill! Double tap or Space when full for BOOST!">
+        <div class="adrenaline-idol">🗿</div>
+        <div class="adrenaline-track">
+          <div id="adrenaline-fill" class="adrenaline-fill"></div>
         </div>
-
-        <!-- Powerup Badges -->
-        <div id="powerup-badges" class="powerup-badges"></div>
+        <div id="adrenaline-text" class="adrenaline-text">0%</div>
       </div>
 
-      <!-- Center: Coins & Distance -->
-      <div class="hud-group">
-        <div class="hud-item">
-          <span class="hud-icon">🪙</span>
-          <div>
-            <div class="hud-label">Coins</div>
-            <div id="hud-coins" class="hud-val">0</div>
-          </div>
-        </div>
-
-        <div class="hud-item">
-          <span class="hud-icon">🏃</span>
-          <div>
-            <div class="hud-label">Distance</div>
-            <div id="hud-distance" class="hud-val">0 m</div>
-          </div>
+      <!-- Center: Score & Multiplier -->
+      <div class="score-display">
+        <div class="score-value" id="hud-score">0</div>
+        <div class="score-sub">
+          <span class="multiplier-badge" id="hud-mult">1X</span>
+          <span class="distance-badge" id="hud-distance">0 m</span>
         </div>
       </div>
 
-      <!-- Right side: Sound and Pause Buttons -->
-      <div style="display:flex; gap:10px;">
-        <button id="btn-sound" class="hud-btn" title="Toggle Sound">🔊</button>
-        <button id="btn-pause" class="hud-btn" title="Pause Game">⏸️</button>
+      <!-- Right side: Coins, Sound, Pause -->
+      <div class="hud-right">
+        <div class="coins-badge">
+          <span class="coin-icon">🪙</span>
+          <span id="hud-coins" class="coins-val">0</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-sound" class="hud-btn" title="Toggle Sound">🔊</button>
+          <button id="btn-pause" class="hud-btn" title="Pause Game">⏸️</button>
+        </div>
       </div>
     </div>
+
+    <!-- Active Power-Up Badges -->
+    <div id="powerup-badges" class="powerup-badges"></div>
 
     <!-- Approaching Turn Alert Banner -->
     <div id="turn-banner" class="hidden">◀ TURN LEFT!</div>
@@ -78,25 +71,25 @@
     <div class="temple-card">
       <div class="idol-badge">🗿</div>
       <h1 class="temple-title">TEMPLE RUN</h1>
-      <p class="temple-subtitle">IDOL ESCAPE 3D</p>
+      <p class="temple-subtitle">IDOL ESCAPE</p>
 
       <div class="stats-grid">
         <div class="stat-box">
-          <div class="title">High Score</div>
+          <div class="title">HIGH SCORE</div>
           <div id="start-high-score" class="value">0</div>
         </div>
         <div class="stat-box">
-          <div class="title">Best Run</div>
+          <div class="title">LONGEST RUN</div>
           <div id="start-best-dist" class="value">0 m</div>
         </div>
       </div>
 
       <div class="controls-guide">
-        <strong>Controls / Controls Guide:</strong><br />
-        • <strong>A / D</strong> or <strong>← / →</strong> : Change Lanes & Turn Corners<br />
-        • <strong>W</strong> or <strong>↑</strong> : Jump over Fire & Roots<br />
-        • <strong>S</strong> or <strong>↓</strong> : Slide under Arches & Blades<br />
-        • <strong>Swipe gestures</strong> supported on Touch & Mobile!
+        <strong>HOW TO PLAY:</strong><br />
+        • <strong>A / D</strong> or <strong>← / →</strong> : Switch Lanes & Turn Corners<br />
+        • <strong>W</strong> or <strong>↑</strong> : Jump over Fire, Logs & Gaps<br />
+        • <strong>S</strong> or <strong>↓</strong> : Slide under Arches & Spikes<br />
+        • <strong>Swipe Gestures</strong> supported on touch screens!
       </div>
 
       <button id="btn-start" class="temple-btn">RUN FOR YOUR LIFE!</button>
@@ -107,24 +100,24 @@
   <div id="gameover-modal" class="modal-overlay hidden">
     <div class="temple-card">
       <div class="idol-badge">💀</div>
-      <h1 class="temple-title" style="color:#ff3333;">GAME OVER</h1>
+      <h1 class="temple-title" style="color:#e63946;">GAME OVER</h1>
       <p id="death-reason" class="temple-subtitle">Caught by Demon Monkeys!</p>
 
       <div class="stats-grid">
         <div class="stat-box">
-          <div class="title">Final Score</div>
+          <div class="title">FINAL SCORE</div>
           <div id="final-score" class="value">0</div>
         </div>
         <div class="stat-box">
-          <div class="title">High Score</div>
+          <div class="title">HIGH SCORE</div>
           <div id="final-high-score" class="value">0</div>
         </div>
         <div class="stat-box">
-          <div class="title">Distance</div>
+          <div class="title">DISTANCE</div>
           <div id="final-distance" class="value">0 m</div>
         </div>
         <div class="stat-box">
-          <div class="title">Coins Collected</div>
+          <div class="title">COINS</div>
           <div id="final-coins" class="value">0</div>
         </div>
       </div>
@@ -136,11 +129,11 @@
   <!-- Pause Modal -->
   <div id="pause-modal" class="modal-overlay hidden">
     <div class="temple-card">
-      <h1 class="temple-title">GAME PAUSED</h1>
-      <p class="temple-subtitle">The idol rests... for now</p>
+      <h1 class="temple-title">PAUSED</h1>
+      <p class="temple-subtitle">Evil Monkeys await outside...</p>
       <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
-        <button id="btn-resume" class="temple-btn">RESUME RUN</button>
-        <button id="btn-pause-restart" class="temple-btn" style="background:#553311; border-color:#885522; color:#ffdd99;">RESTART</button>
+        <button id="btn-resume" class="temple-btn">RESUME</button>
+        <button id="btn-pause-restart" class="temple-btn" style="background:#5a371c; border-color:#82512a; color:#f0d8a8;">RESTART</button>
       </div>
     </div>
   </div>
